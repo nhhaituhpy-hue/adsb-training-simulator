@@ -90,9 +90,9 @@ export function SensorMonitoringModal({
   const stale = monitoring
     ? isSnmpStale(monitoring.lastSnmpResponseAt, now)
     : false;
-  const terminalHref = `/student/${encodeURIComponent(
+  const terminalHref = `/student/terminal?id=${encodeURIComponent(
     scenarioId,
-  )}/terminal?sensorId=${encodeURIComponent(sensor.id)}`;
+  )}&sensorId=${encodeURIComponent(sensor.id)}`;
 
   useEffect(() => {
     const previouslyFocused =

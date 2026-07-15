@@ -120,7 +120,7 @@ export function TerminalSession({ scenarioId }: { scenarioId: string }) {
           Cảm biến vừa mở không phải thiết bị cần xử lý trong kịch bản này. Hãy quay lại QCMS và kiểm tra dấu hiệu cảnh báo.
         </p>
         <Link
-          href={`/student/${scenario.id}`}
+          href={`/student/simulation?id=${scenario.id}`}
           className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded bg-[var(--accent)] px-4 text-sm font-semibold text-white hover:bg-[var(--accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2"
         >
           <ArrowLeft aria-hidden size={18} />
@@ -147,7 +147,7 @@ export function TerminalSession({ scenarioId }: { scenarioId: string }) {
       <div className="mb-5 flex flex-col gap-3 border-b border-[var(--border)] pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <Link
-            href={`/student/${scenario.id}`}
+            href={`/student/simulation?id=${scenario.id}`}
             className="inline-flex min-h-9 items-center gap-2 rounded text-sm font-semibold text-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2"
           >
             <ArrowLeft aria-hidden size={17} />

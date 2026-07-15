@@ -221,7 +221,7 @@ export function AdminDashboard() {
 
                       <div className="flex items-center gap-2 border-t border-[var(--border)] pt-4 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
                         <Link
-                          href={`/admin/${scenario.id}/edit`}
+                          href={`/admin/edit?id=${scenario.id}`}
                           className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded border border-[var(--border-strong)] bg-white px-3 text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] lg:flex-none"
                         >
                           <PencilSimple aria-hidden size={17} weight="regular" />

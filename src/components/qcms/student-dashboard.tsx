@@ -23,7 +23,7 @@ function ScenarioCard({ scenario }: { scenario: Scenario }) {
 
   return (
     <Link
-      href={`/student/${encodeURIComponent(scenario.id)}`}
+      href={`/student/simulation?id=${encodeURIComponent(scenario.id)}`}
       className="group flex min-h-60 flex-col rounded-lg border border-[var(--border)] bg-white p-5 shadow-[var(--shadow-card)] transition-[border-color,box-shadow,transform] duration-150 hover:-translate-y-0.5 hover:border-[var(--accent)] hover:shadow-[var(--shadow-card-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)] motion-reduce:transform-none motion-reduce:transition-none"
     >
       <div className="flex items-start justify-between gap-3">

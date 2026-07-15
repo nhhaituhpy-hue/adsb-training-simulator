@@ -1,5 +1,8 @@
+"use client";
+
 import { Suspense } from "react";
 import { TerminalSession } from "@/components/terminal/terminal-session";
+import { useSearchParams } from "next/navigation";
 
 function LoadingTerminal() {
   return (
@@ -10,16 +13,16 @@ function LoadingTerminal() {
   );
 }
 
-export default async function TerminalPage({
-  params,
-}: {
-  params: Promise<{ scenarioId: string }>;
-}) {
-  const { scenarioId } = await params;
+function TerminalContent() {
+  const searchParams = useSearchParams();
+  const scenarioId = searchParams.get("id") || "";
+  return <TerminalSession scenarioId={scenarioId} />;
+}
 
+export default function TerminalPage() {
   return (
     <Suspense fallback={<LoadingTerminal />}>
-      <TerminalSession scenarioId={scenarioId} />
+      <TerminalContent />
     </Suspense>
   );
 }
