@@ -52,16 +52,16 @@ function SensorPanel({
         className="group w-full rounded text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2"
         aria-label={`Mở giám sát Sensor ${label} tại ${site.name}, trạng thái ${statusLabel}`}
       >
-        <span className="flex items-center justify-between gap-2">
-          <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-sm font-semibold text-[#172033]">
+        <div className="flex flex-col gap-1.5">
+          <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#172033]">
             <Monitor aria-hidden size={18} weight="regular" />
             Sensor {label}
           </span>
-          <span className="text-xs font-semibold text-[var(--accent)] group-hover:underline">
-            Terminal
+          <span className="text-xs font-bold text-[var(--accent)] group-hover:underline">
+            Terminal SSH &rarr;
           </span>
-        </span>
-        <span className="mt-2 block">
+        </div>
+        <span className="mt-2.5 block">
           <StatusBadge status={sensor.status} compact={false} />
         </span>
       </button>
@@ -114,7 +114,7 @@ export function SiteItem({
     Number(site.sensorA !== null) + Number(site.sensorB !== null);
 
   return (
-    <article className="min-w-0 rounded-lg border border-[#b8c4ce] bg-[#eef3f6] p-4 shadow-[0_2px_6px_rgb(15_23_42/0.08)]">
+    <article className="min-w-[300px] sm:min-w-[380px] max-w-[420px] rounded-lg border border-[#b8c4ce] bg-[#eef3f6] p-4 shadow-[0_2px_6px_rgb(15_23_42/0.08)]">
       <div className="flex items-center justify-between gap-3 border-b border-[#cbd5e1] pb-3">
         <h3 className="truncate text-base font-bold text-[#172033]" title={site.name}>
           {site.name}
