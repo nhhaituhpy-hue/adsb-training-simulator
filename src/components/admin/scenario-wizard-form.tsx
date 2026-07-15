@@ -1,0 +1,281 @@
+"use client";
+
+import { CaretLeft, CaretRight, FloppyDisk } from "@phosphor-icons/react";
+import Link from "next/link";
+import { useState, type FormEvent } from "react";
+import type { Scenario } from "@/lib/types";
+import { ActionBuilder } from "./action-builder";
+import { LoginRoleStep } from "./login-role-step";
+import { ScenarioMetadataStep } from "./scenario-metadata-step";
+import {
+  createInitialScenarioDraft,
+  scenarioToDraft,
+  validateScenarioDraft,
+  validateScenarioStep,
+  type ScenarioDraft,
+  type ValidationErrors,
+} from "./scenario-form-utils";
+import { SiteStateEditor } from "./site-state-editor";
+
+type ScenarioWizardFormProps = {
+  initialScenario?: Scenario;
+  onSave: (draft: ScenarioDraft) => void | Promise<void>;
+};
+
+const steps = [
+  { number: 1, label: "Thông tin" },
+  { number: 2, label: "Site và cảm biến" },
+  { number: 3, label: "Vai trò đăng nhập" },
+  { number: 4, label: "Thao tác chuẩn" },
+] as const;
+
+function findTargetSensorName(draft: ScenarioDraft): string {
+  for (const site of draft.sites) {
+    for (const sensor of [site.sensorA, site.sensorB]) {
+      if (sensor?.id === draft.targetSensorId) {
+        return sensor.name;
+      }
+    }
+  }
+
+  return "Quadrant ADS-B sensor";
+}
+
+function firstInvalidStep(errors: ValidationErrors): number {
+  const keys = Object.keys(errors);
+  if (keys.some((key) => key === "title" || key === "description")) return 1;
+  if (
+    keys.some(
+      (key) =>
+        key === "sites" ||
+        key === "targetSensorId" ||
+        key.startsWith("site.") ||
+        key.startsWith("sensor."),
+    )
+  ) {
+    return 2;
+  }
+  if (keys.includes("targetLoginUser")) return 3;
+  return 4;
+}
+
+export function ScenarioWizardForm({
+  initialScenario,
+  onSave,
+}: ScenarioWizardFormProps) {
+  const [draft, setDraft] = useState<ScenarioDraft>(() =>
+    initialScenario
+      ? scenarioToDraft(initialScenario)
+      : createInitialScenarioDraft(),
+  );
+  const [currentStep, setCurrentStep] = useState(1);
+  const [errors, setErrors] = useState<ValidationErrors>({});
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  const editing = Boolean(initialScenario);
+
+  function updateDraft(changes: Partial<ScenarioDraft>) {
+    setDraft((current) => ({ ...current, ...changes }));
+    setErrors({});
+    setSaveError(null);
+  }
+
+  function goNext() {
+    const nextErrors = validateScenarioStep(draft, currentStep);
+    setErrors(nextErrors);
+
+    if (Object.keys(nextErrors).length === 0) {
+      setCurrentStep((step) => Math.min(step + 1, 4));
+      window.scrollTo({ top: 0 });
+    }
+  }
+
+  function goBack() {
+    setErrors({});
+    setCurrentStep((step) => Math.max(step - 1, 1));
+    window.scrollTo({ top: 0 });
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (currentStep < 4) {
+      goNext();
+      return;
+    }
+
+    const allErrors = validateScenarioDraft(draft);
+    setErrors(allErrors);
+
+    if (Object.keys(allErrors).length > 0) {
+      setCurrentStep(firstInvalidStep(allErrors));
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveError(null);
+
+    try {
+      await onSave({
+        ...draft,
+        title: draft.title.trim(),
+        description: draft.description.trim(),
+      });
+    } catch {
+      setSaveError("Không thể lưu kịch bản. Hãy kiểm tra dữ liệu và thử lại.");
+      setIsSaving(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="grid gap-6">
+      <nav aria-label="Các bước tạo kịch bản" className="pb-1">
+        <ol className="grid grid-cols-4 border-b border-[var(--border)]">
+          {steps.map((step) => {
+            const active = currentStep === step.number;
+            const complete = currentStep > step.number;
+
+            return (
+              <li
+                key={step.number}
+                aria-current={active ? "step" : undefined}
+                className={`border-b-2 px-1 pb-3 text-center text-sm sm:px-3 sm:text-left ${
+                  active
+                    ? "border-[var(--accent)] text-[var(--accent)]"
+                    : complete
+                      ? "border-[var(--border-strong)] text-[var(--text-primary)]"
+                      : "border-transparent text-[var(--text-muted)]"
+                }`}
+              >
+                <span className="font-mono text-xs tabular-nums sm:mr-2">
+                  {step.number}
+                </span>
+                <span className="sr-only">{step.label}</span>
+                <span aria-hidden className="hidden font-semibold sm:inline">
+                  {step.label}
+                </span>
+              </li>
+            );
+          })}
+        </ol>
+      </nav>
+
+      <section className="rounded-lg border border-[var(--border)] bg-white p-4 shadow-[var(--shadow-card)] sm:p-6 lg:p-8">
+        <header className="mb-7 border-b border-[var(--border)] pb-5">
+          <p className="text-sm font-medium text-[var(--accent)]">
+            Bước {currentStep} trong 4
+          </p>
+          <h2 className="mt-1 text-xl font-semibold tracking-tight text-[var(--text-primary)] sm:text-2xl">
+            {currentStep === 1 ? "Thông tin kịch bản" : null}
+            {currentStep === 2 ? "Cấu hình trạng thái ban đầu" : null}
+            {currentStep === 3 ? "Chọn vai trò đăng nhập" : null}
+            {currentStep === 4 ? "Xây dựng đáp án thao tác" : null}
+          </h2>
+        </header>
+
+        {currentStep === 1 ? (
+          <ScenarioMetadataStep
+            draft={draft}
+            errors={errors}
+            onChange={updateDraft}
+          />
+        ) : null}
+
+        {currentStep === 2 ? (
+          <SiteStateEditor
+            sites={draft.sites}
+            targetSensorId={draft.targetSensorId}
+            errors={errors}
+            onChange={(sites, targetSensorId) =>
+              updateDraft({ sites, targetSensorId })
+            }
+          />
+        ) : null}
+
+        {currentStep === 3 ? (
+          <LoginRoleStep
+            value={draft.targetLoginUser}
+            errors={errors}
+            hasRecordedActions={draft.expectedActions.length > 0}
+            onChange={(targetLoginUser) =>
+              updateDraft({
+                targetLoginUser,
+                expectedActions:
+                  targetLoginUser === draft.targetLoginUser
+                    ? draft.expectedActions
+                    : [],
+              })
+            }
+          />
+        ) : null}
+
+        {currentStep === 4 ? (
+          <ActionBuilder
+            key={`${draft.targetLoginUser}-${draft.targetSensorId}`}
+            loginUser={draft.targetLoginUser}
+            sensorName={findTargetSensorName(draft)}
+            actions={draft.expectedActions}
+            error={errors.expectedActions}
+            onChange={(expectedActions) => updateDraft({ expectedActions })}
+          />
+        ) : null}
+      </section>
+
+      {saveError ? (
+        <p
+          role="alert"
+          className="rounded border border-[#fecaca] bg-[#fef2f2] px-4 py-3 text-sm text-[#991b1b]"
+        >
+          {saveError}
+        </p>
+      ) : null}
+
+      <footer className="flex flex-col-reverse gap-3 rounded-lg border border-[var(--border)] bg-white p-4 shadow-[var(--shadow-card)] sm:flex-row sm:items-center sm:justify-between">
+        <Link
+          href="/admin"
+          className="inline-flex h-10 items-center justify-center rounded px-4 text-sm font-semibold text-[var(--text-secondary)] hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+        >
+          Hủy
+        </Link>
+
+        <div className="flex flex-col-reverse gap-2 sm:flex-row">
+          {currentStep > 1 ? (
+            <button
+              type="button"
+              onClick={goBack}
+              disabled={isSaving}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded border border-[var(--border-strong)] bg-white px-4 text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--surface-muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <CaretLeft aria-hidden size={17} weight="regular" />
+              Quay lại
+            </button>
+          ) : null}
+
+          {currentStep < 4 ? (
+            <button
+              type="submit"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded bg-[var(--accent)] px-4 text-sm font-semibold text-white hover:bg-[var(--accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 active:bg-[var(--accent-active)] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Tiếp tục
+              <CaretRight aria-hidden size={17} weight="regular" />
+            </button>
+          ) : (
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded bg-[var(--accent)] px-4 text-sm font-semibold text-white hover:bg-[var(--accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 active:bg-[var(--accent-active)] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <FloppyDisk aria-hidden size={18} weight="regular" />
+              {isSaving
+                ? "Đang lưu"
+                : editing
+                  ? "Lưu thay đổi"
+                  : "Tạo kịch bản"}
+            </button>
+          )}
+        </div>
+      </footer>
+    </form>
+  );
+}

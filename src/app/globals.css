@@ -1,26 +1,120 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
+  color-scheme: light;
+  --background: #fafafa;
   --foreground: #171717;
+  --surface: #ffffff;
+  --surface-muted: #f0f0f0;
+  --border: #e5e5e5;
+  --border-strong: #d4d4d4;
+  --text-primary: #171717;
+  --text-secondary: #525252;
+  --text-muted: #666666;
+  --accent: #0369a1;
+  --accent-hover: #075985;
+  --accent-active: #0c4a6e;
+  --accent-muted: #e0f2fe;
+  --terminal-bg: #000000;
+  --terminal-text: #e4e4e7;
+  --terminal-green: #00ff41;
+  --terminal-error: #ef4444;
+  --shadow-card: 0 2px 8px rgb(3 105 161 / 0.05);
+  --shadow-card-hover: 0 8px 24px rgb(3 105 161 / 0.12);
+  --shadow-panel: 0 16px 40px rgb(23 23 23 / 0.12);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-accent: var(--accent);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  background: var(--background);
 }
 
 body {
+  margin: 0;
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  font: inherit;
+}
+
+::selection {
+  background: var(--accent-muted);
+  color: var(--text-primary);
+}
+
+.app-glass {
+  position: relative;
+  background: rgb(240 240 240 / 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.app-glass::before {
+  position: absolute;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+  background: rgb(255 255 255 / 0.18);
+}
+
+.terminal-surface {
+  background: var(--terminal-bg);
+  color: var(--terminal-text);
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+@keyframes grade-row-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.grade-row {
+  animation: grade-row-enter 180ms ease-out both;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .app-glass {
+    background: var(--surface-muted);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
