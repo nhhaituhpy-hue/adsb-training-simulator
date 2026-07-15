@@ -47,3 +47,8 @@ next-env.d.ts
 # PDFs and local plans
 *.pdf
 ADSB_Training_Simulator_Plan.md
+ADSB_Database_Plan.md
+
+# Wrangler & local database mocks
+.wrangler/
+.dev-db.json

@@ -114,33 +114,63 @@ export function createScenarioStore(
         }
 
         const storage = resolveStorage();
-        if (!storage) {
-          return;
-        }
 
-        try {
-          const rawValue = storage.getItem(SCENARIO_STORAGE_KEY);
+        // Đồng bộ bất đồng bộ từ API D1 trước
+        fetch("/api/scenarios")
+          .then((res) => {
+            if (res.ok) {
+              return res.json();
+            }
+            throw new Error("API response not ok");
+          })
+          .then((data: Scenario[]) => {
+            if (data && Array.isArray(data) && data.length > 0) {
+              set({ scenarios: cloneScenarios(data), isHydrated: true, storageError: null });
+              if (storage) {
+                saveScenarios(storage, data);
+              }
+            } else {
+              // Nếu DB trống, hydrate từ localStorage hoặc dùng defaults
+              throw new Error("DB is empty");
+            }
+          })
+          .catch((err) => {
+            console.warn("Using localStorage fallback for scenarios:", err.message);
+            if (!storage) {
+              return;
+            }
 
-          if (rawValue === null || rawValue.trim() === "") {
-            const scenarios = cloneScenarios(defaults, now().toISOString());
-            saveScenarios(storage, scenarios);
-            set({ scenarios, isHydrated: true, storageError: null });
-            return;
-          }
+            try {
+              const rawValue = storage.getItem(SCENARIO_STORAGE_KEY);
 
-          set({
-            scenarios: cloneScenarios(loadScenarios(storage)),
-            isHydrated: true,
-            storageError: null,
+              if (rawValue === null || rawValue.trim() === "") {
+                const scenarios = cloneScenarios(defaults, now().toISOString());
+                saveScenarios(storage, scenarios);
+                set({ scenarios, isHydrated: true, storageError: null });
+                // Đẩy các scenarios mặc định lên database khi lần đầu tạo
+                scenarios.forEach((s) => {
+                  fetch("/api/scenarios", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(s),
+                  }).catch(() => {});
+                });
+                return;
+              }
+
+              set({
+                scenarios: cloneScenarios(loadScenarios(storage)),
+                isHydrated: true,
+                storageError: null,
+              });
+            } catch (error) {
+              set({
+                scenarios: cloneScenarios(defaults, now().toISOString()),
+                isHydrated: true,
+                storageError: errorMessage(error),
+              });
+            }
           });
-        } catch (error) {
-          // Keep invalid or future-version data untouched so recovery is possible.
-          set({
-            scenarios: cloneScenarios(defaults, now().toISOString()),
-            isHydrated: true,
-            storageError: errorMessage(error),
-          });
-        }
       },
 
       createScenario: (input) => {
@@ -155,6 +185,14 @@ export function createScenarioStore(
         const scenarios = upsertScenario(get().scenarios, scenario);
 
         set({ scenarios, storageError: persist(scenarios) });
+
+        // Đồng bộ lên Cloudflare D1
+        fetch("/api/scenarios", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(scenario),
+        }).catch((err) => console.error("Failed to sync scenario with D1:", err));
+
         return scenario;
       },
 
@@ -178,6 +216,14 @@ export function createScenarioStore(
         const scenarios = upsertScenario(get().scenarios, updated);
 
         set({ scenarios, storageError: persist(scenarios) });
+
+        // Đồng bộ lên Cloudflare D1
+        fetch("/api/scenarios", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updated),
+        }).catch((err) => console.error("Failed to sync updated scenario with D1:", err));
+
         return updated;
       },
 
@@ -190,6 +236,12 @@ export function createScenarioStore(
 
         const scenarios = removeScenario(get().scenarios, scenarioId);
         set({ scenarios, storageError: persist(scenarios) });
+
+        // Đồng bộ lên Cloudflare D1
+        fetch(`/api/scenarios?id=${encodeURIComponent(scenarioId)}`, {
+          method: "DELETE",
+        }).catch((err) => console.error("Failed to sync delete scenario with D1:", err));
+
         return true;
       },
 
@@ -201,11 +253,28 @@ export function createScenarioStore(
         const storage = resolveStorage();
         const storageError = persist(scenarios);
 
+        // Lấy tất cả scenario hiện tại để xoá khỏi D1
+        const currentScenarios = get().scenarios;
+
         set({
           scenarios,
           isHydrated: storage ? true : get().isHydrated,
           storageError,
         });
+
+        // Xoá và chèn lại defaults trên D1
+        currentScenarios.forEach((s) => {
+          fetch(`/api/scenarios?id=${encodeURIComponent(s.id)}`, { method: "DELETE" })
+            .catch(() => {});
+        });
+        scenarios.forEach((s) => {
+          fetch("/api/scenarios", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(s),
+          }).catch(() => {});
+        });
+
         return scenarios;
       },
     };

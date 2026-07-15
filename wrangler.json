@@ -1,0 +1,10 @@
+{
+  "pages_build_output_dir": ".vercel/output/static",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "adsb-db",
+      "database_id": "7dc57ed7-0492-47a0-a2a6-27a81bec5cb0"
+    }
+  ]
+}
