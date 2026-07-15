@@ -5,7 +5,6 @@ import { fileURLToPath } from "node:url";
 const projectRoot = dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
-  output: "export",
   poweredByHeader: false,
   turbopack: {
     root: projectRoot,

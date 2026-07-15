@@ -11,37 +11,27 @@ export interface D1DatabaseSimple {
   };
 }
 
-// Lớp giả lập D1 bằng localStorage (khi chạy offline dưới local npm run dev)
+// Global variable giả lập trong bộ nhớ RAM để chạy cục bộ (local dev)
+// Tránh dùng các thư viện Node.js (fs, path) để không gây lỗi biên dịch ở Edge runtime
+const globalStorage = (globalThis as any);
+if (!globalStorage.__mockD1Data) {
+  globalStorage.__mockD1Data = {};
+}
+
 class LocalMockD1Database implements D1DatabaseSimple {
   private getStorage(): Record<string, any> {
-    if (typeof window === "undefined") {
-      // Trong môi trường Node.js (SSR), giả lập ghi file JSON tạm thời
-      const fs = require("fs");
-      const path = require("path");
-      const dbPath = path.join(process.cwd(), ".dev-db.json");
-      if (!fs.existsSync(dbPath)) {
-        fs.writeFileSync(dbPath, JSON.stringify({}));
-      }
-      try {
-        return JSON.parse(fs.readFileSync(dbPath, "utf-8"));
-      } catch {
-        return {};
-      }
-    } else {
-      // Trong môi trường Browser
-      const val = localStorage.getItem("adsb-training-simulator:mock-d1");
-      return val ? JSON.parse(val) : {};
-    }
+    return globalStorage.__mockD1Data;
   }
 
   private saveStorage(data: Record<string, any>) {
-    if (typeof window === "undefined") {
-      const fs = require("fs");
-      const path = require("path");
-      const dbPath = path.join(process.cwd(), ".dev-db.json");
-      fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
-    } else {
-      localStorage.setItem("adsb-training-simulator:mock-d1", JSON.stringify(data));
+    globalStorage.__mockD1Data = data;
+    // Nếu ở browser, đồng bộ thêm vào localStorage
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("adsb-training-simulator:mock-d1", JSON.stringify(data));
+      } catch (e) {
+        // Bỏ qua lỗi hạn ngạch lưu trữ
+      }
     }
   }
 
@@ -118,13 +108,13 @@ class LocalMockD1Database implements D1DatabaseSimple {
 
 // Xuất hàm kết nối database
 export function getDb(): D1DatabaseSimple {
-  // Cloudflare Pages bindings được đưa vào process.env.DB hoặc thông qua context
+  // Cloudflare Pages bindings được đưa vào process.env.DB
   const cloudflareDb = (process.env as any).DB;
   if (cloudflareDb) {
     return cloudflareDb as D1DatabaseSimple;
   }
   
-  // Trả về mock database khi chạy ở máy local hoặc server Node.js phát triển
+  // Trả về mock database chạy trên RAM khi ở local dev
   return new LocalMockD1Database();
 }
 
