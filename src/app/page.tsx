@@ -1,6 +1,7 @@
 import { GearSix, Student } from "@phosphor-icons/react/ssr";
 import { RoleCard } from "@/components/ui/role-card";
 
+// Trang chủ Hệ thống kiểm tra mô phỏng ADS-B
 export default function Home() {
   return (
     <section className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-5xl flex-col justify-center px-4 py-10 sm:px-6 lg:px-10">
