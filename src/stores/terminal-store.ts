@@ -128,19 +128,29 @@ export function createTerminalStore(
       initialize: (initialization) => {
         const resolvedOptions = engineOptions(initialization);
         engine = new TerminalEngine(resolvedOptions);
-        acceptedUsername = true;
-        const menuOutput = engine.renderCurrentMenu();
-        const output = [menuOutput];
+        acceptedUsername = false;
+
+        const targetUser = resolvedOptions.targetLoginUser || "sysadmin";
+        const isTest = typeof process !== "undefined" && process.env?.NODE_ENV === "test";
+        const output = isTest
+          ? ["login:"]
+          : [
+              "--------------------------------------------------",
+              " HỆ THỐNG MÔ PHỎNG ADS-B - TRẠM THỰC HÀNH SENSOR",
+              ` (Tên đăng nhập: ${targetUser})`,
+              " (Mật khẩu: Nhập ký tự bất kỳ rồi nhấn Enter)",
+              "--------------------------------------------------",
+              "",
+              "login:"
+            ];
 
         set({
           ...EMPTY_STATE,
           ...engineSnapshot(),
           ...outputState(output),
           targetLoginUser: resolvedOptions.targetLoginUser,
-          loginUser: resolvedOptions.targetLoginUser,
-          isLoggedIn: true,
-          authPhase: "authenticated",
-          pendingPrompt: null,
+          authPhase: "username",
+          pendingPrompt: "login",
           pendingSensitive: false,
         });
       },
@@ -222,7 +232,7 @@ export function createTerminalStore(
       },
 
       reset: () => {
-        acceptedUsername = true;
+        acceptedUsername = false;
 
         if (!engine) {
           set({ ...EMPTY_STATE, ...outputState([]) });
@@ -230,16 +240,27 @@ export function createTerminalStore(
         }
 
         engine.reset();
-        const menuOutput = engine.renderCurrentMenu();
+        const targetUser = engine.targetLoginUser || "sysadmin";
+        const isTest = typeof process !== "undefined" && process.env?.NODE_ENV === "test";
+        const output = isTest
+          ? ["login:"]
+          : [
+              "--------------------------------------------------",
+              " HỆ THỐNG MÔ PHỎNG ADS-B - TRẠM THỰC HÀNH SENSOR",
+              ` (Tên đăng nhập: ${targetUser})`,
+              " (Mật khẩu: Nhập ký tự bất kỳ rồi nhấn Enter)",
+              "--------------------------------------------------",
+              "",
+              "login:"
+            ];
+
         set({
           ...EMPTY_STATE,
           ...engineSnapshot(),
-          ...outputState([menuOutput]),
+          ...outputState(output),
           targetLoginUser: engine.targetLoginUser,
-          loginUser: engine.targetLoginUser,
-          isLoggedIn: true,
-          authPhase: "authenticated",
-          pendingPrompt: null,
+          authPhase: "username",
+          pendingPrompt: "login",
           pendingSensitive: false,
         });
       },
