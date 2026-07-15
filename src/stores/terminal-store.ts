@@ -128,16 +128,19 @@ export function createTerminalStore(
       initialize: (initialization) => {
         const resolvedOptions = engineOptions(initialization);
         engine = new TerminalEngine(resolvedOptions);
-        acceptedUsername = false;
-        const output = ["login:"];
+        acceptedUsername = true;
+        const menuOutput = engine.renderCurrentMenu();
+        const output = [menuOutput];
 
         set({
           ...EMPTY_STATE,
           ...engineSnapshot(),
           ...outputState(output),
           targetLoginUser: resolvedOptions.targetLoginUser,
-          authPhase: "username",
-          pendingPrompt: "login",
+          loginUser: resolvedOptions.targetLoginUser,
+          isLoggedIn: true,
+          authPhase: "authenticated",
+          pendingPrompt: null,
           pendingSensitive: false,
         });
       },
@@ -219,7 +222,7 @@ export function createTerminalStore(
       },
 
       reset: () => {
-        acceptedUsername = false;
+        acceptedUsername = true;
 
         if (!engine) {
           set({ ...EMPTY_STATE, ...outputState([]) });
@@ -227,13 +230,16 @@ export function createTerminalStore(
         }
 
         engine.reset();
+        const menuOutput = engine.renderCurrentMenu();
         set({
           ...EMPTY_STATE,
           ...engineSnapshot(),
-          ...outputState(["login:"]),
+          ...outputState([menuOutput]),
           targetLoginUser: engine.targetLoginUser,
-          authPhase: "username",
-          pendingPrompt: "login",
+          loginUser: engine.targetLoginUser,
+          isLoggedIn: true,
+          authPhase: "authenticated",
+          pendingPrompt: null,
           pendingSensitive: false,
         });
       },
